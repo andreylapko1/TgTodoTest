@@ -41,8 +41,89 @@ description_window = Window(
 async def category_getter(dialog_manager: DialogManager, **kwargs):
     categories = await API_CLIENT.get_categories()
     dialog_manager.dialog_data['all_categories'] = categories
-    return {'categories': categories}
+    categories_for_select = [
+      (cat.get('name', 'Unknown'), str(cat.get('id')))
+        for cat in categories if cat is not None
+    ]
+    print(categories)
+    return {'categories': categories_for_select}
 
-task_dialog = Dialog(title_window, description_window)
+
+async def on_category_selected(callback: CallbackQuery, widget: Select, dialog_manager: DialogManager, item_id: str):
+    dialog_manager.dialog_data['category_id'] = item_id
+    await dialog_manager.next()
+
+category_window = Window(
+    Const('➡️ Step 3/5. Select a category:'),
+    Select(id='s_category',
+    item_id_getter=operator.itemgetter(1),
+    items='categories',
+    on_click=on_category_selected,
+           text=Format('🔘 {item[0]}')
+           ),
+    getter=category_getter,
+    state=TaskCreation.category
+
+
+)
+
+
+async def on_date_selected(callback: CallbackQuery, widget: Calendar, dialog_manager: DialogManager, selected_date: date):
+    dialog_manager.dialog_data['due_date'] = selected_date.isoformat()
+    await dialog_manager.next()
+
+date_window = Window(
+    Const('➡️ Step 4/5. Select a due date:'),
+    Calendar(
+        id='c_date',
+        on_click=on_date_selected
+    ),
+    state=TaskCreation.due_date
+)
+
+
+async def confirm_getter(dialog_manager: DialogManager, **kwargs):
+    data = dialog_manager.dialog_data
+    category_id = data.get('category_id')
+    all_categories = data.get('all_categories', [])
+    category_name = next(
+       (cat.get('name') for cat in all_categories if category_id == str(cat.get('id'))),
+        'Category not found'
+    )
+
+    return {
+        'title': data.get('title', '-'),
+        'description': data.get('description', '-'),
+        'category': category_name,
+        'due_date': data.get('due_date', 'Date not selected')
+    }
+
+async def on_confirm(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    task_data = {
+        'title': dialog_manager.dialog_data.get('title'),
+        'description': dialog_manager.dialog_data.get('description'),
+        'category': dialog_manager.dialog_data.get('category_id'),
+        'due_date': dialog_manager.dialog_data.get('due_date'),
+    }
+    try:
+        await callback.message.answer('Task create successfully! 🎉')
+    except Exception as e:
+        await callback.message.answer('Creation error. Try again! ❌')
+
+    await dialog_manager.done()
+
+confirm_window = Window(
+    Const('➡️ Step 5/5. Please confirm the task details:'),
+    Format('<b>Title:</b> {title}'),
+    Format("<b>Description:</b> {description}"),
+    Format("<b>Category:</b> {category}"),
+    Format("<b>Due Date:</b> {due_date}"),
+    Button(Const('✅ Save Task'), id='confirm_btn', on_click=on_confirm),
+    Cancel(Const('❌ Cancel'), ),
+    state=TaskCreation.confirm
+)
+
+
+task_dialog = Dialog(title_window, description_window, category_window, date_window, confirm_window)
 
 

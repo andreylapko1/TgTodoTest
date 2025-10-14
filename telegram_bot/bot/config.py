@@ -6,7 +6,7 @@ from aiogram.enums import ParseMode
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
 
-from .api_client import DjangoAPIClient
+
 from .api_client import DjangoAPIClient
 load_dotenv()
 
