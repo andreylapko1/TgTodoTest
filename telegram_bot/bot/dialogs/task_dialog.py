@@ -45,7 +45,7 @@ async def category_getter(dialog_manager: DialogManager, **kwargs):
       (cat.get('name', 'Unknown'), str(cat.get('id')))
         for cat in categories if cat is not None
     ]
-    print(categories)
+    print(categories, categories_for_select)
     return {'categories': categories_for_select}
 
 
@@ -70,6 +70,7 @@ category_window = Window(
 
 async def on_date_selected(callback: CallbackQuery, widget: Calendar, dialog_manager: DialogManager, selected_date: date):
     dialog_manager.dialog_data['due_date'] = selected_date.isoformat()
+    await callback.answer()
     await dialog_manager.next()
 
 date_window = Window(
@@ -120,7 +121,8 @@ confirm_window = Window(
     Format("<b>Due Date:</b> {due_date}"),
     Button(Const('✅ Save Task'), id='confirm_btn', on_click=on_confirm),
     Cancel(Const('❌ Cancel'), ),
-    state=TaskCreation.confirm
+    state=TaskCreation.confirm,
+    getter=confirm_getter
 )
 
 
