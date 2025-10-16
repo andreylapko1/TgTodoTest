@@ -1,3 +1,5 @@
+import json
+
 import aiohttp
 import telegram_bot.bot.config as cfg
 
@@ -14,4 +16,28 @@ class DjangoAPIClient:
                 return data
             else:
                 return []
+
+    async def create_task(self,username: str,  title: str, description: str, category: str, due_date: str, telegram_id: str | int):
+
+        payload = {
+            'telegram_id': telegram_id,
+            'username': username,
+            "title": title,
+            "description": description,
+            "category": category,
+            "due_date": due_date
+        }
+        async with aiohttp.ClientSession() as session:
+            response = await session.post(
+                self.base_url + 'tasks/create/',
+                json=payload
+            )
+            if response.status == 201:
+                print('ASDASD')
+                return True
+            else:
+                response = await response.json()
+                with open('resp', 'w') as file:
+                    file.write(json.dumps(response))
+                return False
 

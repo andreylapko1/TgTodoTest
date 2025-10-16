@@ -1,15 +1,17 @@
 from .core.fields import CustomPKFields
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser
 from django.db import models
+
+from todo_project import settings
 
 
 class Task(models.Model):
     id = CustomPKFields(max_length=35, primary_key=True, null=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tasks', null=True) # User not found
     title = models.CharField(max_length=100, null=False, )
     category = models.ForeignKey('TaskCategory', on_delete=models.CASCADE, related_name='tasks_by_category')
     description = models.TextField(null=True, blank=True)
-    due_date = models.DateTimeField(null=True, blank=True)
+    due_date = models.DateField(null=True, blank=True)
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -30,10 +32,17 @@ class TaskCategory(models.Model):
 
 
 class UserProfile(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     telegram_id = models.BigIntegerField(unique=True, db_index=True)
 
     def __str__(self):
         return self.user.username
 
-# Create your models here.
+
+
+class TelegramUser(AbstractUser):
+    telegram_id = models.BigIntegerField(unique=True, null=True, blank=True)
+    telegram_username = models.CharField(max_length=150, unique=True, null=True, blank=True)
+
+    def __str__(self):
+        return self.telegram_username

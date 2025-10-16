@@ -101,13 +101,19 @@ async def confirm_getter(dialog_manager: DialogManager, **kwargs):
 
 async def on_confirm(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     task_data = {
+        'username': callback.from_user.username,
+        'telegram_id': callback.from_user.id,
         'title': dialog_manager.dialog_data.get('title'),
         'description': dialog_manager.dialog_data.get('description'),
         'category': dialog_manager.dialog_data.get('category_id'),
         'due_date': dialog_manager.dialog_data.get('due_date'),
     }
     try:
-        await callback.message.answer('Task create successfully! 🎉')
+        task_create = await API_CLIENT.create_task(**task_data)
+        if task_create:
+            await callback.message.answer('Task create successfully! 🎉')
+        else:
+            await callback.message.answer('Creation error. Try again! ❌')
     except Exception as e:
         await callback.message.answer('Creation error. Try again! ❌')
 
